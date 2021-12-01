@@ -2,18 +2,21 @@ use std::env;
 mod y_2021;
 
 fn main() {
-	let args: Vec<String> = env::args().collect();
+    let args: Vec<String> = env::args().collect();
 
-	if args.len() != 2 {
-		panic!("Unexpected number of arguments. Expecting 2, got {}", args.len());
-	}
-    
-	let day_number = &args[1].parse::<u32>().unwrap();
+    if args.len() != 2 {
+        panic!(
+            "Unexpected number of arguments. Expecting 2, got {}",
+            args.len()
+        );
+    }
 
-	let day_executor = match day_number {
-		2021_1 => y_2021::day_1::entry,
-		_ => panic!("Unknown/unimplemented challenge day")
-	};
+    let day_number = &args[1].parse::<u32>().unwrap();
 
-	day_executor();
+    let day_executor = match day_number {
+        2021_1 => y_2021::day_1::entry,
+        _ => panic!("Unknown/unimplemented challenge day"),
+    };
+
+    day_executor();
 }
