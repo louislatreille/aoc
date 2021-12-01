@@ -1,3 +1,5 @@
+use itertools::Itertools;
+
 pub fn entry() {
     println!("Starting day 1!");
 
@@ -7,14 +9,22 @@ pub fn entry() {
 
     println!(
         "Number of depth increase: {}",
-        find_depth_increase(&depth_measurements)
+        count_depth_increase(&depth_measurements)
+    );
+    println!(
+        "Number of depth increase (v2): {}",
+        count_depth_increase_v2(&depth_measurements)
     );
 
     let sliding_windows = calculate_sliding_windows(&depth_measurements);
 
     println!(
         "Number of depth increase with sliding windows: {}",
-        find_depth_increase(&sliding_windows)
+        count_depth_increase(&sliding_windows)
+    );
+    println!(
+        "Number of depth increase with sliding windows (v2): {}",
+        count_depth_increase_sliding_windows(&depth_measurements)
     );
 }
 
@@ -32,7 +42,17 @@ fn calculate_sliding_windows(raw_depth_measurements: &Vec<u32>) -> Vec<u32> {
     sliding_windows
 }
 
-fn find_depth_increase(depth_measurements: &Vec<u32>) -> u32 {
+fn count_depth_increase_sliding_windows(depth_measurements: &Vec<u32>) -> usize {
+    depth_measurements
+        .iter()
+        .tuple_windows::<(&u32, &u32, &u32)>()
+        .map(|(a, b, c)| a + b + c)
+        .tuple_windows()
+        .filter(|(a, b)| b > a)
+        .count()
+}
+
+fn count_depth_increase(depth_measurements: &Vec<u32>) -> u32 {
     let mut depth_increase = 0;
 
     let mut last_mea = depth_measurements.get(0).unwrap();
@@ -47,6 +67,14 @@ fn find_depth_increase(depth_measurements: &Vec<u32>) -> u32 {
     depth_increase
 }
 
+fn count_depth_increase_v2(depth_measurements: &Vec<u32>) -> usize {
+    depth_measurements
+        .iter()
+        .tuple_windows()
+        .filter(|(a, b)| b > a)
+        .count()
+}
+
 #[cfg(test)]
 mod tests {
     // Note this useful idiom: importing names from outer (for mod tests) scope.
@@ -56,28 +84,32 @@ mod tests {
     fn test_example_input() {
         let example_input = vec![199, 200, 208, 210, 200, 207, 240, 269, 260, 263];
 
-        assert_eq!(find_depth_increase(&example_input), 7);
+        assert_eq!(count_depth_increase(&example_input), 7);
+        assert_eq!(count_depth_increase_v2(&example_input), 7);
     }
 
     #[test]
     fn test_very_small_input() {
         let input = vec![199, 200, 208, 206];
 
-        assert_eq!(find_depth_increase(&input), 2);
+        assert_eq!(count_depth_increase(&input), 2);
+        assert_eq!(count_depth_increase_v2(&input), 2);
     }
 
     #[test]
     fn test_equal_depth() {
         let input = vec![199, 199, 199];
 
-        assert_eq!(find_depth_increase(&input), 0);
+        assert_eq!(count_depth_increase(&input), 0);
+        assert_eq!(count_depth_increase_v2(&input), 0);
     }
 
     #[test]
     fn test_only_decrease() {
         let input = vec![199, 198, 187];
 
-        assert_eq!(find_depth_increase(&input), 0);
+        assert_eq!(count_depth_increase(&input), 0);
+        assert_eq!(count_depth_increase_v2(&input), 0);
     }
 
     #[test]
@@ -90,5 +122,24 @@ mod tests {
             calculate_sliding_windows(&example_input),
             example_sliding_windows
         );
+    }
+
+    #[test]
+    fn test_calc_sliding_windows() {
+        let example_input = vec![199, 200, 208, 210, 200, 207, 240, 269, 260, 263];
+
+        let example_sliding_windows = vec![607, 618, 618, 617, 647, 716, 769, 792];
+
+        assert_eq!(
+            calculate_sliding_windows(&example_input),
+            example_sliding_windows
+        );
+    }
+
+    #[test]
+    fn test_sliding_windows_example() {
+        let example_input = vec![199, 200, 208, 210, 200, 207, 240, 269, 260, 263];
+
+        assert_eq!(count_depth_increase_sliding_windows(&example_input), 5);
     }
 }
