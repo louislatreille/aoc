@@ -12,9 +12,9 @@ fn main() {
     }
 
     let day_number = &args[1].parse::<u32>().unwrap();
-
     let day_executor = match day_number {
         2021_1 => y_2021::day_1::entry,
+        2021_2 => y_2021::day_2::entry,
         _ => panic!("Unknown/unimplemented challenge day"),
     };
 
