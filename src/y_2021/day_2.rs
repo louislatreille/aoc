@@ -1,5 +1,5 @@
 pub fn entry() {
-    println!("Starting day 1!");
+    println!("Starting day 2!");
 
     let commands = aoc::read_input("./resources/y_2021/day_2_example.txt", |line| {
         return SubmarineCommand::new(line);
@@ -24,7 +24,7 @@ pub fn entry() {
     println!(
         "Current submarine state: {:?}, with distance: {}",
         sub_state,
-        sub_state.calc_ditance()
+        sub_state.calc_distance()
     );
 }
 
@@ -128,7 +128,7 @@ impl SubmarineState {
         }
     }
 
-    fn advance(&mut self, command: &SubmarineCommand) -> &SubmarineState {
+    fn advance(&mut self, command: &SubmarineCommand) -> &mut SubmarineState {
         match command {
             SubmarineCommand::Forward(val) => {
                 let y = self.aim * i64::from(*val);
@@ -144,7 +144,7 @@ impl SubmarineState {
         self
     }
 
-    fn calc_ditance(&self) -> i64 {
+    fn calc_distance(&self) -> i64 {
         self.current_position.calc_distance()
     }
 }
@@ -174,7 +174,7 @@ mod tests {
     }
 
     #[test]
-    fn test_point_add_comand_from_0() {
+    fn test_point_add_command_from_0() {
         let initial_point = Point::new(0, 0);
 
         assert_eq!(
@@ -192,7 +192,7 @@ mod tests {
     }
 
     #[test]
-    fn test_point_add_comand_from_non_0() {
+    fn test_point_add_command_from_non_0() {
         let initial_point = Point::new(4, -8);
 
         assert_eq!(
@@ -235,7 +235,20 @@ mod tests {
         initial_state.advance(&SubmarineCommand::Up(3));
         initial_state.advance(&SubmarineCommand::Forward(5));
 
-        assert_eq!(initial_state.calc_ditance(), 287);
+        assert_eq!(initial_state.calc_distance(), 287);
+    }
+
+    #[test]
+    fn test_submarine_state_advance_chaining() {
+        let mut initial_state = SubmarineState::init();
+
+        initial_state
+            .advance(&SubmarineCommand::Down(8))
+            .advance(&SubmarineCommand::Forward(2))
+            .advance(&SubmarineCommand::Up(3))
+            .advance(&SubmarineCommand::Forward(5));
+
+        assert_eq!(initial_state.calc_distance(), 287);
     }
 
     #[test]
@@ -245,6 +258,6 @@ mod tests {
         initial_state.advance(&SubmarineCommand::Up(8));
         initial_state.advance(&SubmarineCommand::Forward(2));
 
-        assert_eq!(initial_state.calc_ditance(), 32);
+        assert_eq!(initial_state.calc_distance(), 32);
     }
 }
