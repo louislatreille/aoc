@@ -15,6 +15,7 @@ fn main() {
     let day_executor = match day_number {
         2021_1 => y_2021::day_1::entry,
         2021_2 => y_2021::day_2::entry,
+        2021_3 => y_2021::day_3::entry,
         _ => panic!("Unknown/unimplemented challenge day"),
     };
 
