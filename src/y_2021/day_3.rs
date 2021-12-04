@@ -7,11 +7,7 @@ pub fn entry() {
         return line;
     });
 
-    let line_length = inputs.get(0).unwrap().len();
-    let mut char_counts_indexes = vec![];
-    for i in 0..line_length {
-        char_counts_indexes.push(count_chars(&inputs, i));
-    }
+    let char_counts_indexes = count_chars(&inputs);
 
     let mut gamma_rate = "".to_owned();
     let mut epsilon_rate = "".to_owned();
@@ -44,51 +40,60 @@ pub fn entry() {
     );
 }
 
-fn count_chars(lines: &Vec<String>, index: usize) -> HashMap<char, u32> {
-    let mut counts_map: HashMap<char, u32> = HashMap::new();
+fn count_chars<T: AsRef<str>>(lines: &Vec<T>) -> Vec<HashMap<char, u32>> {
+    let mut counts = vec![
+        HashMap::new();
+        match lines.get(0) {
+            Some(line) => line.as_ref().chars().count(),
+            None => return vec![],
+        }
+    ];
 
     for line in lines {
-        let current_char = match line.chars().nth(index) {
-            Some(char) => char,
-            None => '\0',
-        };
-
-        match counts_map.get_mut(&current_char) {
-            Some(count) => *count += 1,
-            None => {
-                counts_map.insert(current_char, 1);
-            }
-        };
+        for (i, current_char) in line.as_ref().chars().enumerate() {
+            match counts[i].get_mut(&current_char) {
+                Some(count) => *count += 1,
+                None => {
+                    counts[i].insert(current_char, 1);
+                }
+            };
+        }
     }
 
-    counts_map
+    counts
 }
 
 fn most_common_chars<'a>(counts: &'a HashMap<char, u32>) -> Vec<(&'a char, &'a u32)> {
-    let max = counts
+    let max = match counts
         .iter()
         .max_by(|(_, n1), (_, n2)| {
             return n1.cmp(n2);
         })
         .map(|(_, n)| *n)
-        .unwrap();
+    {
+        Some(max) => max,
+        None => return vec![],
+    };
 
     counts.iter().filter(|(_, n)| **n == max).collect()
 }
 
 fn least_common_chars<'a>(counts: &'a HashMap<char, u32>) -> Vec<(&'a char, &'a u32)> {
-    let min = counts
+    let min = match counts
         .iter()
         .min_by(|(_, n1), (_, n2)| {
             return n1.cmp(n2);
         })
         .map(|(_, n)| *n)
-        .unwrap();
+    {
+        Some(min) => min,
+        None => return vec![],
+    };
 
     counts.iter().filter(|(_, n)| **n == min).collect()
 }
 
-fn find_o2_generator_rating<'b>(inputs: &Vec<String>) -> String {
+fn find_o2_generator_rating(inputs: &Vec<String>) -> String {
     find_rating_with_discriminator(inputs, |counts| {
         let chars = most_common_chars(counts);
 
@@ -100,34 +105,37 @@ fn find_o2_generator_rating<'b>(inputs: &Vec<String>) -> String {
     })
 }
 
-fn find_co2_scrubber_rating<'b>(inputs: &Vec<String>) -> String {
+fn find_co2_scrubber_rating(inputs: &Vec<String>) -> String {
     find_rating_with_discriminator(inputs, |counts| {
         let chars = least_common_chars(counts);
 
         match chars.len() {
             1 => chars.get(0).unwrap().0,
             2 => &'0',
-            _ => panic!("Unexpected most common chars..."),
+            _ => panic!("Unexpected least common chars..."),
         }
     })
 }
 
-fn find_rating_with_discriminator<'b, F>(inputs: &Vec<String>, discriminator: F) -> String
+fn find_rating_with_discriminator<F>(inputs: &Vec<String>, discriminator: F) -> String
 where
-    F: for<'a> Fn(&'a HashMap<char, u32>) -> &'a char,
+    F: for<'b> Fn(&'b HashMap<char, u32>) -> &'b char,
 {
     let mut cloned_inputs = inputs.clone();
-
     let mut i: usize = 0;
-    while cloned_inputs.len() > 1 {
-        let counts = count_chars(&cloned_inputs, i);
 
-        let least_common_char = discriminator(&counts);
+    while cloned_inputs.len() > 1 {
+        let counts = count_chars(&cloned_inputs);
+
+        let char = discriminator(match counts.get(i) {
+            Some(counts) => counts,
+            None => panic!("Out of bound of the inputs without any rating yet. Aborting..."),
+        });
 
         cloned_inputs = cloned_inputs
             .iter()
             .filter(|str| {
-                return str.chars().nth(i).unwrap() == *least_common_char;
+                return str.chars().nth(i).unwrap() == *char;
             })
             .map(|str| str.to_owned())
             .collect();
@@ -140,7 +148,7 @@ where
         i += 1;
     }
 
-    cloned_inputs.get(0).unwrap().to_string()
+    cloned_inputs[0].to_owned()
 }
 
 #[cfg(test)]
