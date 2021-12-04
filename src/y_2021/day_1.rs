@@ -44,9 +44,8 @@ fn calculate_sliding_windows(raw_depth_measurements: &Vec<u32>) -> Vec<u32> {
 
 fn count_depth_increase_sliding_windows(depth_measurements: &Vec<u32>) -> usize {
     depth_measurements
-        .iter()
-        .tuple_windows::<(&u32, &u32, &u32)>()
-        .map(|(a, b, c)| a + b + c)
+        .windows(3)
+        .map(|a| a[0] + a[1] + a[2])
         .tuple_windows()
         .filter(|(a, b)| b > a)
         .count()

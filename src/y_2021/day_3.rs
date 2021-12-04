@@ -3,8 +3,8 @@ use std::collections::HashMap;
 pub fn entry() {
     println!("Starting day 3!");
 
-    let inputs = aoc::read_input("./resources/y_2021/day_3_input.txt", |line| {
-        return line.to_owned(); //Try with lifetime here??
+    let inputs = aoc::read_input("./resources/y_2021/day_3_input.txt", move |line| {
+        return line;
     });
 
     let line_length = inputs.get(0).unwrap().len();
@@ -88,54 +88,41 @@ fn least_common_chars<'a>(counts: &'a HashMap<char, u32>) -> Vec<(&'a char, &'a 
     counts.iter().filter(|(_, n)| **n == min).collect()
 }
 
-fn find_o2_generator_rating(inputs: &Vec<String>) -> String {
-    let mut cloned_inputs = inputs.clone();
+fn find_o2_generator_rating<'b>(inputs: &Vec<String>) -> String {
+    find_rating_with_discriminator(inputs, |counts| {
+        let chars = most_common_chars(counts);
 
-    let mut i: usize = 0;
-    while cloned_inputs.len() > 1 {
-        let counts = count_chars(&cloned_inputs, i);
-
-        let most_common_chars = most_common_chars(&counts);
-
-        let most_common_char = match most_common_chars.len() {
-            1 => most_common_chars.get(0).unwrap().0,
+        match chars.len() {
+            1 => chars.get(0).unwrap().0,
             2 => &'1',
             _ => panic!("Unexpected most common chars..."),
-        };
-
-        cloned_inputs = cloned_inputs
-            .iter()
-            .filter(|str| {
-                return str.chars().nth(i).unwrap() == *most_common_char;
-            })
-            .map(|str| str.to_owned())
-            .collect();
-
-        if i > 1000000 {
-            println!("Likely ran into an infinite loop. Aborting...");
-            break;
         }
-
-        i += 1;
-    }
-
-    cloned_inputs.get(0).unwrap().to_owned()
+    })
 }
 
-fn find_co2_scrubber_rating(inputs: &Vec<String>) -> String {
+fn find_co2_scrubber_rating<'b>(inputs: &Vec<String>) -> String {
+    find_rating_with_discriminator(inputs, |counts| {
+        let chars = least_common_chars(counts);
+
+        match chars.len() {
+            1 => chars.get(0).unwrap().0,
+            2 => &'0',
+            _ => panic!("Unexpected most common chars..."),
+        }
+    })
+}
+
+fn find_rating_with_discriminator<'b, F>(inputs: &Vec<String>, discriminator: F) -> String
+where
+    F: for<'a> Fn(&'a HashMap<char, u32>) -> &'a char,
+{
     let mut cloned_inputs = inputs.clone();
 
     let mut i: usize = 0;
     while cloned_inputs.len() > 1 {
         let counts = count_chars(&cloned_inputs, i);
 
-        let least_common_chars = least_common_chars(&counts);
-
-        let least_common_char = match least_common_chars.len() {
-            1 => least_common_chars.get(0).unwrap().0,
-            2 => &'0',
-            _ => panic!("Unexpected most common chars..."),
-        };
+        let least_common_char = discriminator(&counts);
 
         cloned_inputs = cloned_inputs
             .iter()
@@ -153,5 +140,50 @@ fn find_co2_scrubber_rating(inputs: &Vec<String>) -> String {
         i += 1;
     }
 
-    cloned_inputs.get(0).unwrap().to_owned()
+    cloned_inputs.get(0).unwrap().to_string()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_find_o2_generator_rating_example() {
+        let inputs = vec![
+            "00100".to_owned(),
+            "11110".to_owned(),
+            "10110".to_owned(),
+            "10111".to_owned(),
+            "10101".to_owned(),
+            "01111".to_owned(),
+            "00111".to_owned(),
+            "11100".to_owned(),
+            "10000".to_owned(),
+            "11001".to_owned(),
+            "00010".to_owned(),
+            "01010".to_owned(),
+        ];
+
+        assert_eq!("10111", find_o2_generator_rating(&inputs));
+    }
+
+    #[test]
+    fn test_find_co2_scrubber_rating_example() {
+        let inputs = vec![
+            "00100".to_owned(),
+            "11110".to_owned(),
+            "10110".to_owned(),
+            "10111".to_owned(),
+            "10101".to_owned(),
+            "01111".to_owned(),
+            "00111".to_owned(),
+            "11100".to_owned(),
+            "10000".to_owned(),
+            "11001".to_owned(),
+            "00010".to_owned(),
+            "01010".to_owned(),
+        ];
+
+        assert_eq!("01010", find_co2_scrubber_rating(&inputs));
+    }
 }

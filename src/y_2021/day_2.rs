@@ -2,7 +2,7 @@ pub fn entry() {
     println!("Starting day 2!");
 
     let commands = aoc::read_input("./resources/y_2021/day_2_example.txt", |line| {
-        return SubmarineCommand::new(line);
+        return SubmarineCommand::new(line.as_str());
     });
 
     let mut position = Point::new(0, 0);
