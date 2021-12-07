@@ -28,7 +28,7 @@ pub fn entry() {
 
     while fish_colony.age < 256 {
         fish_colony.grow_1_day();
-        //println!("{:?}", fish_colony.fishes_by_age)
+        println!("{:?}", fish_colony.fishes_by_age)
     }
 
     println!("{}", fish_colony);
@@ -112,36 +112,13 @@ impl FishColonyOptimized {
 
         for fishes in self.fishes_by_age.iter() {
             if *fishes.0 == 0 {
-                match new_colony.get_mut(&8) {
-                    Some(val) => *val += *fishes.1,
-                    None => {
-                        new_colony.insert(8, *fishes.1);
-                    }
-                }
-                match new_colony.get_mut(&6) {
-                    Some(val) => *val += *fishes.1,
-                    None => {
-                        new_colony.insert(6, *fishes.1);
-                    }
-                }
-            } else {
-                match new_colony.get_mut(&(fishes.0 - 1)) {
-                    Some(val) => *val += *fishes.1,
-                    None => {
-                        new_colony.insert(fishes.0 - 1, *fishes.1);
-                    }
-                }
-            }
-
-            // Optimized manipulations
-            /*if *fishes.0 == 0 {
-                new_colony.entry(8).or_insert(*fishes.1);
-                let current_6 = new_colony.entry(6).or_insert(*fishes.1);
+                new_colony.insert(8, *fishes.1);
+                let current_6 = new_colony.entry(6).or_insert(0);
                 *current_6 += fishes.1;
             } else {
-                let current = new_colony.entry(fishes.0 - 1).or_insert(*fishes.1);
+                let current = new_colony.entry(fishes.0 - 1).or_insert(0);
                 *current += fishes.1;
-            }*/
+            }
         }
 
         self.fishes_by_age = new_colony;
