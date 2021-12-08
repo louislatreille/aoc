@@ -50,7 +50,7 @@ fn calc_median(numbers: &Vec<u32>) -> u32 {
     median
 }
 
-fn calc_center_point(numbers: &Vec<u32>) -> (u32, i64) {
+fn calc_center_point(numbers: &Vec<u32>) -> (u32, u32) {
     let min_max = numbers.iter().minmax();
     let (min, max) = match min_max {
         itertools::MinMaxResult::NoElements => panic!("Empty list of values!"),
@@ -58,7 +58,7 @@ fn calc_center_point(numbers: &Vec<u32>) -> (u32, i64) {
         itertools::MinMaxResult::MinMax(min, max) => (min, max),
     };
 
-    let mut weight_by_points: HashMap<u32, i64> = HashMap::new();
+    let mut weight_by_points: HashMap<u32, u32> = HashMap::new();
 
     for i in *min..=*max {
         weight_by_points.insert(i, calc_weight_from_point(numbers, i));
@@ -75,11 +75,11 @@ fn calc_center_point(numbers: &Vec<u32>) -> (u32, i64) {
     }
 }
 
-fn calc_weight_from_point(numbers: &Vec<u32>, point: u32) -> i64 {
+fn calc_weight_from_point(numbers: &Vec<u32>, point: u32) -> u32 {
     let mut weight = 0;
 
     for number in numbers.iter() {
-        weight += (i64::from(*number) - i64::from(point)).abs();
+        weight += u32::checked_sub(*number, point).unwrap_or(point - *number);
     }
 
     weight
@@ -93,22 +93,16 @@ fn calc_weight_from_point_exp(numbers: &Vec<u32>) -> (u32, u32) {
         itertools::MinMaxResult::MinMax(min, max) => (min, max),
     };
 
-    let mut total_cost_by_steps: HashMap<i64, u32> = HashMap::new();
-    for i in *min..=(*max - *min) {
+    let mut triangular_numbers: HashMap<u32, u32> = HashMap::new();
+    for i in 0..=*max {
         if i == 0 {
-            total_cost_by_steps.insert(0, 0);
+            triangular_numbers.insert(0, 0);
             continue;
         }
 
-        let prev_cost = match total_cost_by_steps.get(&i64::from(i - 1)) {
-            Some(val) => val,
-            None => unreachable!(),
-        };
-
-        total_cost_by_steps.insert(i64::from(i), prev_cost + i);
+        let weight = triangular_numbers[&(i - 1)];
+        triangular_numbers.insert(i, weight + i);
     }
-
-    println!("{:?}", total_cost_by_steps);
 
     let mut weight_by_points: HashMap<u32, u32> = HashMap::new();
 
@@ -116,16 +110,15 @@ fn calc_weight_from_point_exp(numbers: &Vec<u32>) -> (u32, u32) {
         let mut weight = 0;
 
         for number in numbers.iter() {
-            weight += match total_cost_by_steps.get(&(i64::from(*number) - i64::from(i)).abs()) {
-                Some(val) => val,
-                None => unreachable!(),
-            }
+            weight +=
+                match triangular_numbers.get(&u32::checked_sub(*number, i).unwrap_or(i - *number)) {
+                    Some(val) => val,
+                    None => unreachable!(),
+                }
         }
 
         weight_by_points.insert(i, weight);
     }
-
-    println!("{:?}", weight_by_points);
 
     match weight_by_points
         .iter()
