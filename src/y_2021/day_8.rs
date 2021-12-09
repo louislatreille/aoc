@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::{fmt::Display, io::ErrorKind};
 
 pub fn entry() {
     println!("Starting day 8!");
@@ -7,7 +7,7 @@ pub fn entry() {
         return parse_note_line(line);
     });
 
-    let (uniq_segs, digits) = agg_note_lines(&note_lines);
+    let (_, digits) = agg_note_lines(&note_lines);
 
     // Part 1
     println!("Found {} simple digits", count_simple_digits(digits));
@@ -16,14 +16,17 @@ pub fn entry() {
     // Part 2
     let mut total = 0;
     for (uniq_segs, digits) in note_lines {
-        println!("{:?} | {:?}", uniq_segs, digits);
-
-        let seven_seg = SevenSegments::new(&uniq_segs);
+        let seven_seg = SevenSegmentsDecoder::new(&uniq_segs);
 
         println!("{}", seven_seg);
 
-        let number = seven_seg.decode_digits(digits);
-        println!("{}", number);
+        let number = match seven_seg.decode_digits(&digits) {
+            Ok(num) => num,
+            Err(_) => {
+                eprintln!("Error with input: {:?} | {:?}", uniq_segs, digits);
+                panic!();
+            }
+        };
 
         total += number;
     }
@@ -31,7 +34,6 @@ pub fn entry() {
     println!("Total is: {}", total);
 }
 
-// TODO can this be done with AsRef??
 fn parse_note_line(line: String) -> (Vec<String>, Vec<String>) {
     let mut pipe_splits = line.split(" | ");
 
@@ -76,7 +78,7 @@ fn count_simple_digits(digits: Vec<String>) -> usize {
         .count()
 }
 
-struct SevenSegments {
+struct SevenSegmentsDecoder {
     top: char,
     top_left: char,
     top_right: char,
@@ -92,8 +94,8 @@ struct SevenSegments {
     num_zero_chars: Vec<char>,
 }
 
-impl SevenSegments {
-    fn new(uniq_segs: &Vec<String>) -> SevenSegments {
+impl SevenSegmentsDecoder {
+    fn new(uniq_segs: &Vec<String>) -> SevenSegmentsDecoder {
         let num_one_segs = match uniq_segs.iter().filter(|seg| seg.len() == 2).nth(0) {
             Some(val) => val,
             None => panic!("Couldn't find a 1 in the unique segments"),
@@ -202,7 +204,7 @@ impl SevenSegments {
 
         //println!("Down left segment: {}", down_left_segment);
 
-        SevenSegments {
+        SevenSegmentsDecoder {
             top: top_segment,
             top_left: top_left_segment,
             top_right: top_right_segment,
@@ -258,66 +260,92 @@ impl SevenSegments {
         }
     }
 
-    fn decode_digits(&self, digits: Vec<String>) -> u32 {
+    fn decode_digits(&self, digits: &Vec<String>) -> Result<u32, std::io::ErrorKind> {
         if digits.len() != 4 {
             panic!("Invalid input!");
         }
 
         let mut i = 4;
-        digits
-            .iter()
-            .map(|digit| self.decode_single_digit(digit))
-            .fold(0, |sum, num| {
-                i -= 1;
-                sum + num * 10_u32.pow(i)
-            })
+        digits.iter().try_fold(0, |sum, digit| {
+            let num = match self.decode_single_digit(digit) {
+                Ok(num) => num,
+                Err(err) => {
+                    eprintln!("Failed to decode digits! {:?}", digits);
+                    return Err(err);
+                }
+            };
+
+            i -= 1;
+            Ok(sum + num * 10_u32.pow(i))
+        })
     }
 
     // TODO how to do that with Result?
-    fn decode_single_digit(&self, digit: &String) -> u32 {
+    fn decode_single_digit(&self, digit: &String) -> Result<u32, std::io::ErrorKind> {
         match digit.len() {
-            0 => panic!("No chars!"),
-            1 => panic!("Only one char!"),
-            2 => return 1,
-            3 => return 7,
-            4 => return 4,
+            0 => {
+                eprintln!("Input contains no char");
+                Err(ErrorKind::InvalidInput)
+            }
+            1 => {
+                eprintln!(
+                    "The input contains only one char. Impossible to create a number! {}",
+                    digit
+                );
+                Err(ErrorKind::InvalidInput)
+            }
+            2 => return Ok(1),
+            3 => return Ok(7),
+            4 => return Ok(4),
             5 => {
                 if self.is_two(digit) {
-                    return 2;
+                    return Ok(2);
                 }
 
                 if self.is_three(digit) {
-                    return 3;
+                    return Ok(3);
                 }
 
                 if self.is_five(digit) {
-                    return 5;
+                    return Ok(5);
                 }
 
-                println!(
+                eprintln!(
                     "Didn't find any matching number with the five segments received!: {}",
                     digit
                 );
-                panic!();
+
+                Err(ErrorKind::InvalidInput)
             }
             6 => {
                 if self.is_six(digit) {
-                    return 6;
+                    return Ok(6);
                 }
 
                 if self.is_nine(digit) {
-                    return 9;
+                    return Ok(9);
                 }
 
                 if self.is_zero(digit) {
-                    return 0;
+                    return Ok(0);
                 }
 
-                panic!("Didn't find any matching number with the five segments received!");
+                eprintln!(
+                    "Didn't find any matching number with the six segments received!: {}",
+                    digit
+                );
+
+                Err(ErrorKind::InvalidInput)
             }
-            7 => return 8,
-            _ => panic!("Too many chars!"),
-        };
+            7 => return Ok(8),
+            _ => {
+                eprintln!(
+                    "Received more than 7 chars. Impossible to determine number! {}",
+                    digit
+                );
+                Err(ErrorKind::InvalidInput)
+            }
+        }
     }
 
     fn is_two(&self, digit: &String) -> bool {
@@ -357,7 +385,7 @@ impl SevenSegments {
     }
 }
 
-impl Display for SevenSegments {
+impl Display for SevenSegmentsDecoder {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, " {}{}{} ", self.top, self.top, self.top)?;
         writeln!(f, "{}   {}", self.top_left, self.top_right)?;
