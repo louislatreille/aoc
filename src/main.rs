@@ -22,6 +22,7 @@ fn main() {
         2021_7 => y_2021::day_7::entry,
         2021_8 => y_2021::day_8::entry,
         2021_9 => y_2021::day_9::entry,
+        2021_10 => y_2021::day_10::entry,
         _ => panic!("Unknown/unimplemented challenge day"),
     };
 
