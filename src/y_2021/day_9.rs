@@ -6,11 +6,11 @@ pub fn entry() {
             return line.chars().map(|c| c.to_digit(10).unwrap()).collect();
         });
 
-    println!("{:?}", height_map);
+    //println!("{:?}", height_map);
 
     // Part 1
     let lowest_points = find_lowest_points(&height_map);
-    println!("{:?}", lowest_points);
+    //println!("{:?}", lowest_points);
 
     let mut risk_level = 0;
     for lowest_point in lowest_points.iter() {
@@ -21,7 +21,7 @@ pub fn entry() {
 
     // Part 2
     let basins = find_basins_from_lowest_points(&lowest_points, &height_map);
-    println!("{:?}", basins);
+    //println!("{:?}", basins);
 
     let mut largest_basin_size = (0, 0, 0);
     for basin in basins.iter() {
@@ -41,10 +41,10 @@ pub fn entry() {
         }
     }
 
-    println!("{:?}", largest_basin_size);
+    //println!("{:?}", largest_basin_size);
 
     println!(
-        "Answer: {}",
+        "Part 2: {}",
         largest_basin_size.0 * largest_basin_size.1 * largest_basin_size.2
     );
 }
@@ -118,14 +118,14 @@ fn find_basin_from_point<'a>(
     point: &'a (usize, usize, u32),
     basin: &'a mut Vec<(usize, usize, u32)>,
     height_map: &'a Vec<Vec<u32>>,
-) -> &'a Vec<(usize, usize, u32)> {
+) {
     //println!("{:?}", point);
     //println!("{:?}", basin);
 
     if point.2 == 9 {
-        return basin;
+        return;
     } else if basin.contains(point) {
-        return basin;
+        return;
     }
 
     basin.push(*point);
@@ -136,10 +136,6 @@ fn find_basin_from_point<'a>(
     match height_map.get(i - 1) {
         Some(val) => match val.get(j) {
             Some(val) => {
-                if basin.contains(&(i - 1, j, *val)) {
-                    ()
-                }
-
                 find_basin_from_point(&(i - 1, j, *val), basin, height_map);
             }
             None => (),
@@ -148,51 +144,31 @@ fn find_basin_from_point<'a>(
     };
 
     match height_map.get(i) {
-        Some(val) => match val.get(j - 1) {
-            Some(val) => {
-                if basin.contains(&(i, j - 1, *val)) {
-                    ()
+        Some(val) => {
+            match val.get(j + 1) {
+                Some(val) => {
+                    find_basin_from_point(&(i, j + 1, *val), basin, height_map);
                 }
-
-                find_basin_from_point(&(i, j - 1, *val), basin, height_map);
+                None => (),
             }
-            None => (),
-        },
+
+            match val.get(j - 1) {
+                Some(val) => {
+                    find_basin_from_point(&(i, j - 1, *val), basin, height_map);
+                }
+                None => (),
+            }
+        }
         None => (),
     };
 
     match height_map.get(i + 1) {
         Some(val) => match val.get(j) {
             Some(val) => {
-                if basin.contains(&(i + 1, j, *val)) {
-                    ()
-                }
-
                 find_basin_from_point(&(i + 1, j, *val), basin, height_map);
             }
             None => (),
         },
         None => (),
     };
-
-    match height_map.get(i) {
-        Some(val) => match val.get(j + 1) {
-            Some(val) => {
-                if basin.contains(&(i, j + 1, *val)) {
-                    ()
-                }
-
-                find_basin_from_point(&(i, j + 1, *val), basin, height_map);
-            }
-            None => (),
-        },
-        None => (),
-    };
-
-    /*to_return.extend(basin_points_top.iter().map(|point| point.to_owned()));
-    to_return.extend(basin_points_left.iter().map(|point| point.to_owned()));
-    to_return.extend(basin_points_bottom.iter().map(|point| point.to_owned()));
-    to_return.extend(basin_points_right.iter().map(|point| point.to_owned()));*/
-
-    basin
 }
