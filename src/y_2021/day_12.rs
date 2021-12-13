@@ -6,7 +6,7 @@ pub fn entry() {
     println!("Starting day 12!");
 
     let split_lines: Vec<Vec<String>> =
-        aoc::read_input("./resources/y_2021/day_12_example_1.txt", move |line| {
+        aoc::read_input("./resources/y_2021/day_12_input.txt", move |line| {
             return line.split("-").map(|str| str.to_owned()).collect();
         });
 
