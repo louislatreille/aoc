@@ -45,9 +45,10 @@ pub fn entry() {
     find_all_paths_bfs(&caves, &mut paths, &mut current_path, &String::from("end"));
     println!("BFS: Found {} paths", paths.len());
 
-    /*let mut paths = vec![vec![String::from("start")]];
-    find_all_paths_bfs(&caves, &mut paths, &String::from("end"));
-    println!("BFS: Found {} paths", paths.len());*/
+    let mut paths = vec![];
+    let mut current_path = vec![String::from("start")];
+    find_all_paths_dfs(&caves, &mut paths, &mut current_path, &String::from("end"));
+    println!("DFS: Found {} paths", paths.len());
 }
 
 fn find_all_paths_bfs(
@@ -56,7 +57,9 @@ fn find_all_paths_bfs(
     current_path: &mut Vec<String>,
     end_node: &String,
 ) {
+    //println!("{:?}", current_path);
     for next_cave in find_next_caves_from_path(caves, &current_path.clone()).unwrap() {
+        //println!("{}", next_cave);
         if *next_cave == end_node {
             let mut full_path: Vec<String> = current_path.iter().map(|s| s.to_owned()).collect();
             full_path.push(next_cave.to_owned().to_owned());
@@ -90,49 +93,51 @@ fn find_all_paths_bfs(
     }
 }
 
-/*fn find_all_paths_dfs(
+fn find_all_paths_dfs(
     caves: &HashMap<&String, HashSet<&String>>,
     paths: &mut Vec<Vec<String>>,
+    current_path: &mut Vec<String>,
     end_node: &String,
 ) {
-    println!("{:?}", paths);
-    for next_path in paths.iter_mut() {
-        let clone = &next_path.clone();
-        let next_caves = match find_next_caves_from_path(caves, clone) {
-            Some(n) => n,
-            None => continue,
-        };
-
-        for next_cave in next_caves {
-            if *next_cave == end_node {
-                next_path.push(next_cave.to_owned().to_owned());
-                continue;
-            }
-
-            let small_caves_count = next_path
-                .iter()
-                .filter(|cave| cave.chars().next().unwrap().is_lowercase())
-                .fold(HashMap::new(), |mut counts, cave| {
-                    let entry = counts.entry(cave).or_insert(0);
-                    *entry += 1;
-                    return counts;
-                });
-            let is_small_cave_two = small_caves_count
-                .iter()
-                .find(|cave_count| *cave_count.1 > 1)
-                .is_some();
-
-            if next_cave.chars().next().unwrap().is_uppercase()
-                || (next_cave.chars().next().unwrap().is_lowercase() && !is_small_cave_two)
-                || (next_cave.chars().next().unwrap().is_lowercase()
-                    && is_small_cave_two
-                    && !next_path.contains(next_cave))
-            {
-                next_path.push(next_cave.to_owned().to_owned());
-            }
-        }
+    //println!("{:?}", current_path);
+    let last_cave = current_path.last().unwrap();
+    if last_cave == end_node {
+        paths.push(current_path.to_owned());
+        return;
     }
-}*/
+
+    let small_caves_count = current_path
+        .iter()
+        .filter(|cave| cave.chars().next().unwrap().is_lowercase())
+        .fold(HashMap::new(), |mut counts, cave| {
+            let entry = counts.entry(cave).or_insert(0);
+            *entry += 1;
+            return counts;
+        });
+    let last_has_three = small_caves_count
+        .iter()
+        .find(|cave_count| *cave_count.0 == last_cave && *cave_count.1 > 2)
+        .is_some();
+    let last_has_two = small_caves_count
+        .iter()
+        .find(|cave_count| *cave_count.0 == last_cave && *cave_count.1 > 1)
+        .is_some();
+    let is_already_small_cave_two = small_caves_count
+        .iter()
+        .filter(|cave_count| *cave_count.0 != last_cave && *cave_count.1 > 1)
+        .count();
+
+    if last_has_three || (last_has_two && is_already_small_cave_two > 0) {
+        return;
+    }
+
+    for next_cave in find_next_caves_from_path(caves, &current_path.clone()).unwrap() {
+        //println!("{}", next_cave);
+        current_path.push(next_cave.to_owned().to_owned());
+        find_all_paths_dfs(caves, paths, current_path, end_node);
+        current_path.pop();
+    }
+}
 
 fn find_next_caves_from_path<'a>(
     caves: &'a HashMap<&'a String, HashSet<&'a String>>,
