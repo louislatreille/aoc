@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fmt::Display, io::Lines};
+use std::{collections::HashMap, fmt::Display};
 
 pub fn entry() {
     println!("Starting day 13!");
@@ -47,17 +47,9 @@ pub fn entry() {
 
     println!("Visible points: {:?}", visible_points.len());
 
-    let visible_points = visible_points.keys();
-    let mut grid: Vec<Vec<String>> = vec![vec![String::from(" "); 50]; 50];
-    for visible_point in visible_points {
-        let row = grid.get_mut(visible_point.y as usize).unwrap();
-        let val = row.get_mut(visible_point.x as usize).unwrap();
-        *val = String::from("#");
-    }
-
-    for row in grid.iter() {
-        println!("{:?}", row);
-    }
+    let visible_points = visible_points.keys().map(|p| **p).collect();
+    let grid = Grid::new(visible_points);
+    grid.display(3);
 }
 
 fn read_input(lines: Vec<String>) -> (Vec<Point>, Vec<Fold>) {
@@ -80,6 +72,56 @@ fn read_input(lines: Vec<String>) -> (Vec<Point>, Vec<Fold>) {
     }
 
     (points, folds)
+}
+
+struct Grid {
+    points: Vec<Point>,
+}
+
+impl Grid {
+    fn new(points: Vec<Point>) -> Grid {
+        Grid { points }
+    }
+
+    fn display(&self, maximize: i32) {
+        let max_x = self
+            .points
+            .iter()
+            .max_by(|p1, p2| p1.x.cmp(&p2.x))
+            .map(|p| p.x)
+            .unwrap();
+        let max_y = self
+            .points
+            .iter()
+            .max_by(|p1, p2| p1.y.cmp(&p2.y))
+            .map(|p| p.y)
+            .unwrap();
+
+        let mut grid: Vec<Vec<String>> =
+            vec![
+                vec![String::from("."); ((max_x + 1) * maximize) as usize];
+                ((max_y + 1) * maximize) as usize
+            ];
+        for point in self.points.iter() {
+            let row_num = point.y * maximize;
+            let col_num = point.x * maximize;
+            for i in 0..maximize {
+                let row = grid.get_mut((row_num + i) as usize).unwrap();
+
+                for j in 0..maximize {
+                    let val = row.get_mut((col_num + j) as usize).unwrap();
+                    *val = String::from("#");
+                }
+            }
+        }
+
+        for row in grid {
+            for point in row {
+                print!("{}", point);
+            }
+            println!("");
+        }
+    }
 }
 
 #[derive(Debug)]
