@@ -1,4 +1,7 @@
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    time::SystemTime,
+};
 
 pub fn entry() {
     println!("Starting day 15!");
@@ -13,8 +16,14 @@ pub fn entry() {
 
     let extended_map = calculate_full_map(nodes);
     //println!("{:?}", extended_map);
+    let start = SystemTime::now();
     let score = a_star((0, 0), &extended_map);
-    println!("{}", score);
+    let end = SystemTime::now();
+    println!(
+        "Score is {}, found in {} ms",
+        score,
+        end.duration_since(start).unwrap().as_millis()
+    );
 }
 
 fn calculate_full_map(initial_map: Vec<Vec<u32>>) -> Vec<Vec<u32>> {
