@@ -69,17 +69,7 @@ pub fn entry() {
     let s_3 = &scanners[3];
     let s_4 = &scanners[4];
 
-    let from_0_to_1 = scanner_into_0.get(&s_1).unwrap();
-    let from_0_to_4 = scanner_into_0.get(&s_4).unwrap(); // Operations are not correct. Orientation is probably wrong based on the differences...
-
-    let mut position_4 = Point::new(0, 0, 0);
-    for yo in from_0_to_4 {
-        println!("{:?}", yo);
-        position_4 = position_4.add(&yo.1);
-        println!("{}", position_4);
-    }
-
-    let test = transform_beacons_into(&s_1.beacons, scanner_into_0.get(&s_1).unwrap());
+    let test = transform_beacons_into(&s_4.beacons, scanner_into_0.get(&s_4).unwrap());
     println!("{:?}", test);
 
     /*while !scanners_2.is_empty() {
@@ -240,7 +230,7 @@ fn find_orientation_and_position(
         for beacon_from_scanner_0 in common_beacons_from_scanner_1.iter() {
             for beacon_from_scanner_1 in common_beacons_from_scanner_2.iter() {
                 let test_point =
-                    beacon_from_scanner_0.add(&beacon_from_scanner_1.reorient(&orientation));
+                    beacon_from_scanner_0.substract(&beacon_from_scanner_1.reorient(&orientation));
 
                 let vec = solver.entry(test_point).or_insert(vec![]);
                 vec.push((*beacon_from_scanner_0, *beacon_from_scanner_1));
@@ -295,28 +285,28 @@ fn transform_beacons_into(
     beacons: &Vec<Point>,
     operations: &Vec<(Orientation, Point)>,
 ) -> Vec<Point> {
-    /*beacons
-    .iter()
-    .map(|b| {
-        let mut to_return = Point::new(0, 0, 0);
-        for op in operations.iter() {
-            to_return = b.reorient(&op.0).add(&op.1);
-        }
-        to_return
-    })
-    .collect()*/
-
     println!("{:?}", operations);
+    let mut scanner_position = Point::new(0, 0, 0);
+    for i in 0..operations.len() - 1 {
+        let pos = operations[i + 1].1;
+        let or = operations[i].0;
 
-    let point_1 = beacons[0];
-    println!("{}", point_1);
-    let mut to_return = Point::new(0, 0, 0);
-    for op in operations.iter() {
-        to_return = op.1.add(&point_1.reorient(&op.0));
-        println!("{}", to_return);
+        scanner_position = scanner_position.add(&pos.reorient(&or));
     }
 
-    vec![to_return]
+    println!("Scanner loc: {}", scanner_position);
+
+    let last_orientation = &operations[operations.len() - 1].0;
+
+    beacons
+        .iter()
+        .map(|b| {
+            scanner_position.substract(
+                &b.reorient(last_orientation)
+                    .reorient(&Orientation::PosxNegyPosz), // TODO why does this work???
+            )
+        })
+        .collect()
 }
 
 #[derive(Debug, Clone)]
