@@ -16,60 +16,51 @@ use regex::Regex;
 pub fn entry() {
     println!("Starting day 19!");
 
-    let scanners = read_scanner_data("./resources/y_2021/day_19_example.txt");
+    let mut scanners = read_scanner_data("./resources/y_2021/day_19_input.txt");
 
     println!("Got {} scanners to transform", scanners.len());
 
-    let scanner_0 = scanners[0].clone();
+    let mut scanners_with_transformed_beacons = vec![];
+    let mut scanner_0 = scanners.remove(0);
+    scanner_0.beacons_as_seen_from_0 = scanner_0.beacons.clone();
+    scanner_0.operations_from_0 = Some((Orientation::PosxPosyPosz, Point::new(0, 0, 0)));
+    scanners_with_transformed_beacons.push(scanner_0);
 
-    let mut beacons_into_scanner_0 = vec![];
-    beacons_into_scanner_0.extend(scanner_0.beacons.clone());
+    let mut last_scanners_transformed = scanners_with_transformed_beacons.clone();
+    while !scanners.is_empty() {
+        println!("Got {} scanners to transform", scanners.len());
 
-    let mut scanner_into_0 = HashMap::new();
-    scanner_into_0.insert(
-        scanner_0,
-        vec![(Orientation::PosxPosyPosz, Point::new(0, 0, 0))],
-    );
+        let transformed_scanners =
+            from_scanner_x_to_scanner_0(&last_scanners_transformed, &scanners);
 
-    let mut scanners_not_transformed = scanners.clone();
-    let mut last_scanners_found = HashMap::new();
-    last_scanners_found.extend(scanner_into_0.clone());
-
-    while scanners_not_transformed.len() > 0 {
-        println!(
-            "Got {} scanners to transform",
-            scanners_not_transformed.len()
-        );
-
-        scanners_not_transformed = scanners
-            .iter()
-            .filter(|s| !scanner_into_0.contains_key(*s))
-            .map(|s| s.clone())
-            .collect();
-
-        let new_ops = from_scanner_x_to_scanner_0(&last_scanners_found, &scanners_not_transformed);
-        last_scanners_found.clear();
-        last_scanners_found.extend(new_ops.clone());
-        scanner_into_0.extend(new_ops.clone());
+        last_scanners_transformed.clear();
+        last_scanners_transformed.extend(transformed_scanners.clone());
+        scanners_with_transformed_beacons.extend(transformed_scanners);
+        scanners.retain(|s| !scanners_with_transformed_beacons.contains(s));
     }
 
     println!("All scanners transformed");
 
-    let mut all_beacons_from_scanner_0 = HashSet::new();
-    for ops in scanner_into_0.iter() {
-        println!(
-            "Transforming beacons from scanner {} to scanner 0",
-            ops.0.id
-        );
-
-        let new_beacons = transform_beacons_into(&ops.0.id, &ops.0.beacons, ops.1);
-        all_beacons_from_scanner_0.extend(new_beacons);
-
-        //println!("{:?}", all_beacons_from_scanner_0);
+    let mut all_beacons_from_0 = HashSet::new();
+    for scanner in scanners_with_transformed_beacons.iter() {
+        all_beacons_from_0.extend(scanner.beacons_as_seen_from_0.clone());
     }
 
-    println!("{}", scanner_into_0.len());
-    println!("{}", all_beacons_from_scanner_0.len());
+    println!("There are {} beacons in total", all_beacons_from_0.len());
+
+    let mut largest_distance = 0;
+    for pair in scanners_with_transformed_beacons.iter().combinations(2) {
+        let man_distance = pair[0]
+            .operations_from_0
+            .unwrap()
+            .1
+            .manhattan_distance_from(&pair[1].operations_from_0.unwrap().1);
+        if man_distance > largest_distance {
+            largest_distance = man_distance;
+        }
+    }
+
+    println!("Largest distance is {}", largest_distance);
 }
 
 lazy_static! {
@@ -119,68 +110,59 @@ fn find_orientation_and_position(
         scanner_1.id, scanner_2.id
     );
 
+    let beacons_1 = match !scanner_1.beacons_as_seen_from_0.is_empty() {
+        true => &scanner_1.beacons_as_seen_from_0,
+        false => &scanner_1.beacons,
+    };
+
+    if !scanner_2.beacons_as_seen_from_0.is_empty() {
+        unreachable!();
+    }
+
     let mut solver = HashMap::new();
-    let mut found;
     for orientation in Orientation::iter() {
-        for beacon_from_scanner_0 in scanner_1.beacons.iter() {
+        for beacon_from_scanner_0 in beacons_1.iter() {
             for beacon_from_scanner_1 in scanner_2.beacons.iter() {
                 let test_point =
                     beacon_from_scanner_0.substract(&beacon_from_scanner_1.reorient(&orientation));
 
                 let vec = solver.entry(test_point).or_insert(vec![]);
-                vec.push((*beacon_from_scanner_0, *beacon_from_scanner_1, orientation));
+                vec.push((*beacon_from_scanner_0, *beacon_from_scanner_1));
+            }
+
+            let found = solver.iter().find(|entry| entry.1.len() >= 12);
+
+            if found.is_some() {
+                let pos_vector = found.unwrap().0;
+                let count = found.unwrap().1.len();
+                println!(
+                    "Found {} beacons between scanner {} and scanner {}. Position: {}, orientation: {:?}",
+                    count, scanner_1.id, scanner_2.id, pos_vector, orientation
+                );
+
+                return Some((orientation, *pos_vector));
             }
         }
-    }
-
-    found = solver.iter().filter(|entry| entry.1.len() >= 12).count();
-
-    println!("Found {} set of 12 or more points", found);
-
-    if found > 0 {
-        let answer = solver
-            .iter()
-            .filter(|entry| entry.1.len() >= 12)
-            .last()
-            .unwrap();
-        println!(
-            "Found scanner position: {}, orientation is {:?} between scanner {} and scanner {}",
-            answer.0, answer.1[0].2, scanner_1.id, scanner_2.id
-        );
-
-        return Some((answer.1[0].2, *answer.0));
     }
 
     None
 }
 
 fn from_scanner_x_to_scanner_0(
-    scanner_into_0: &HashMap<Scanner, Vec<(Orientation, Point)>>,
+    transformed_scanners: &Vec<Scanner>,
     scanners: &Vec<Scanner>,
-) -> HashMap<Scanner, Vec<(Orientation, Point)>> {
-    let mut to_return: HashMap<Scanner, Vec<(Orientation, Point)>> = HashMap::new();
+) -> Vec<Scanner> {
+    let mut to_return = vec![];
 
-    for s_y in scanner_into_0.keys() {
+    for s_y in transformed_scanners.iter() {
         for s in scanners.iter() {
             match find_orientation_and_position(s_y, &s) {
                 Some((or, pos)) => {
-                    let ops_between_scanner_y_and_0 = scanner_into_0.get(s_y).unwrap()[0];
-                    println!(
-                        "Operations between scanner 0 and scanner {}: vector {}, rotation {:?}",
-                        s_y.id, ops_between_scanner_y_and_0.1, ops_between_scanner_y_and_0.0
-                    );
-                    println!("Applying rotation {:?} to vector found between scanner {} and scanner {} and adding to {}", ops_between_scanner_y_and_0.0, s_y.id, s.id, ops_between_scanner_y_and_0.1);
-                    let ops = to_return.entry(s.clone()).or_insert(vec![]);
-                    ops.push((
-                        or,
-                        ops_between_scanner_y_and_0
-                            .1
-                            .add(&pos.reorient(&ops_between_scanner_y_and_0.0)),
-                    ));
-                    println!(
-                        "Operations between scanner 0 and scanner {}: vector {}, rotation {:?}",
-                        s.id, ops[0].1, ops[0].0
-                    );
+                    let mut new_scanner = s.clone();
+                    new_scanner.beacons_as_seen_from_0 =
+                        transform_beacons_into(&new_scanner.id, &new_scanner.beacons, &(or, pos));
+                    new_scanner.operations_from_0 = Some((or, pos));
+                    to_return.push(new_scanner);
                 }
                 None => (),
             }
@@ -193,26 +175,20 @@ fn from_scanner_x_to_scanner_0(
 fn transform_beacons_into(
     scanner_id: &u8,
     beacons: &Vec<Point>,
-    operations: &Vec<(Orientation, Point)>,
+    operations: &(Orientation, Point),
 ) -> Vec<Point> {
-    println!("Operations {:?}", operations);
-
-    let ops = operations[0];
-
-    let new_points = beacons
+    beacons
         .iter()
-        .map(|b| ops.1.add(&b.reorient(&ops.0)))
-        .collect();
-
-    println!("{:?}", new_points);
-
-    new_points
+        .map(|b| operations.1.add(&b.reorient(&operations.0)))
+        .collect()
 }
 
 #[derive(Debug, Clone)]
 struct Scanner {
     id: u8,
     beacons: Vec<Point>,
+    beacons_as_seen_from_0: Vec<Point>,
+    operations_from_0: Option<(Orientation, Point)>,
 }
 
 impl Scanner {
@@ -220,17 +196,9 @@ impl Scanner {
         Scanner {
             id,
             beacons: points,
+            beacons_as_seen_from_0: vec![],
+            operations_from_0: None,
         }
-    }
-
-    fn get_diffs(&self) -> Vec<(Point, Point, Point)> {
-        let mut diffs = vec![];
-
-        for pair in self.beacons.iter().combinations(2) {
-            diffs.push((pair[0].clone(), pair[1].clone(), pair[0].substract(pair[1])));
-        }
-
-        diffs
     }
 }
 
@@ -439,29 +407,8 @@ impl Point {
         }
     }
 
-    fn diff_references(&self) -> Vec<Point> {
-        let mut to_return = vec![];
-
-        to_return.push(self.clone());
-        to_return.push(Point::new(self.x, self.z, self.y));
-        to_return.push(Point::new(self.y, self.x, self.z));
-        to_return.push(Point::new(self.y, self.z, self.x));
-        to_return.push(Point::new(self.z, self.x, self.y));
-        to_return.push(Point::new(self.z, self.y, self.x));
-
-        to_return
-    }
-
-    fn is_similar(&self, other: &Self) -> bool {
-        (self.x.abs() == other.x.abs()
-            || self.x.abs() == other.y.abs()
-            || self.x.abs() == other.z.abs())
-            && (self.y.abs() == other.x.abs()
-                || self.y.abs() == other.y.abs()
-                || self.y.abs() == other.z.abs())
-            && (self.z.abs() == other.x.abs()
-                || self.z.abs() == other.y.abs()
-                || self.z.abs() == other.z.abs())
+    fn manhattan_distance_from(&self, other: &Self) -> u32 {
+        ((self.x - other.x).abs() + (self.y - other.y).abs() + (self.z - other.z).abs()) as u32
     }
 }
 
