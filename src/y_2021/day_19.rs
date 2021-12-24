@@ -18,6 +18,8 @@ pub fn entry() {
 
     let scanners = read_scanner_data("./resources/y_2021/day_19_example.txt");
 
+    println!("Got {} scanners to transform", scanners.len());
+
     let scanner_0 = scanners[0].clone();
 
     let mut beacons_into_scanner_0 = vec![];
@@ -29,107 +31,45 @@ pub fn entry() {
         vec![(Orientation::PosxPosyPosz, Point::new(0, 0, 0))],
     );
 
-    /*for s in scanners.iter() {
-        match find_orientation_and_position(&scanner_0, &s) {
-            Some((or, pos)) => {
-                let ops = scanner_into_0.entry(s.clone()).or_insert(vec![]);
-                ops.push((or, pos));
-                //beacons_into_scanner_0.extend(transform_beacons_into(&s.beacons, &or, &pos));
-            }
-            None => (),
-        }
-    }*/
+    let mut scanners_not_transformed = scanners.clone();
+    let mut last_scanners_found = HashMap::new();
+    last_scanners_found.extend(scanner_into_0.clone());
 
-    //println!("{:?}", beacons_into_scanner_0);
+    while scanners_not_transformed.len() > 0 {
+        println!(
+            "Got {} scanners to transform",
+            scanners_not_transformed.len()
+        );
 
-    let mut scanners_2: Vec<Scanner> = scanners
-        .iter()
-        .filter(|s| !scanner_into_0.contains_key(*s))
-        .map(|s| s.clone())
-        .collect();
-
-    let new_ops = fuck_you(&scanner_into_0, &scanners_2);
-    scanner_into_0.extend(new_ops);
-
-    //println!("{:?}", scanner_into_0);
-
-    scanners_2 = scanners
-        .iter()
-        .filter(|s| !scanner_into_0.contains_key(s))
-        .map(|s| s.clone())
-        .collect();
-
-    let new_ops = fuck_you(&scanner_into_0, &scanners_2);
-    scanner_into_0.extend(new_ops);
-
-    //println!("{:?}", scanner_into_0);
-
-    let s_1 = &scanners[1];
-    let s_2 = &scanners[2];
-    let s_3 = &scanners[3];
-    let s_4 = &scanners[4];
-
-    let test = transform_beacons_into(&s_4.beacons, scanner_into_0.get(&s_4).unwrap());
-    println!("{:?}", test);
-
-    /*while !scanners_2.is_empty() {
-        let new_ops = fuck_you(&scanner_into_0, &scanners_2);
-        scanner_into_0.extend(new_ops);
-
-        println!("{:?}", scanner_into_0);
-
-        scanners_2 = scanners
+        scanners_not_transformed = scanners
             .iter()
-            .filter(|s| !scanner_into_0.contains_key(s))
+            .filter(|s| !scanner_into_0.contains_key(*s))
             .map(|s| s.clone())
             .collect();
-    }*/
 
-    /*for entry in test.iter() {
-        if entry.1.len() > 2 {
-            println!("{}: {}", entry.0, entry.1.len());
-        }
-    }*/
-
-    /*let test1_1 = Point::new(404, -588, -901);
-    let test1_2 = Point::new(-336, 658, 858);
-
-    let test2_1 = Point::new(528, -643, 409);
-    let test2_2 = Point::new(-460, 603, -452);
-
-    let test3_1 = Point::new(390, -675, -793);
-    let test3_2 = Point::new(-322, 571, 750);
-
-    let test4_1 = Point::new(-661, -816, -575);
-    let test4_2 = Point::new(729, 430, 532);
-
-    let test5_1 = Point::new(404, -588, -901);
-    let test5_2 = Point::new(-336, 658, 858);
-
-    println!("{}", test1_1.add(&test1_2.reorient(&Point::new(1, -1, 1))));
-    println!("{}", test2_1.add(&test2_2.reorient(&Point::new(1, -1, 1))));
-    println!("{}", test3_1.add(&test3_2.reorient(&Point::new(1, -1, 1))));
-    println!("{}", test4_1.add(&test4_2.reorient(&Point::new(1, -1, 1))));
-    println!("{}", test5_1.add(&test5_2.reorient(&Point::new(1, -1, 1))));
-
-    let mut scanner_1_from_0 = HashSet::new();
-    let mut correct_reorientation = Point::new(1, 1, 1);
-    for reorientation in all_reorientations.iter() {
-        scanner_1_from_0.insert(test1_1.add(&test1_2.reorient(reorientation)));
-        scanner_1_from_0.insert(test2_1.add(&test2_2.reorient(reorientation)));
-        scanner_1_from_0.insert(test3_1.add(&test3_2.reorient(reorientation)));
-        scanner_1_from_0.insert(test4_1.add(&test4_2.reorient(reorientation)));
-        scanner_1_from_0.insert(test5_1.add(&test5_2.reorient(reorientation)));
-
-        if scanner_1_from_0.len() == 1 {
-            correct_reorientation = *reorientation;
-            break; // Should always happen
-        }
-
-        scanner_1_from_0.clear();
+        let new_ops = from_scanner_x_to_scanner_0(&last_scanners_found, &scanners_not_transformed);
+        last_scanners_found.clear();
+        last_scanners_found.extend(new_ops.clone());
+        scanner_into_0.extend(new_ops.clone());
     }
 
-    println!("{:?}, {}", scanner_1_from_0, correct_reorientation);*/
+    println!("All scanners transformed");
+
+    let mut all_beacons_from_scanner_0 = HashSet::new();
+    for ops in scanner_into_0.iter() {
+        println!(
+            "Transforming beacons from scanner {} to scanner 0",
+            ops.0.id
+        );
+
+        let new_beacons = transform_beacons_into(&ops.0.id, &ops.0.beacons, ops.1);
+        all_beacons_from_scanner_0.extend(new_beacons);
+
+        //println!("{:?}", all_beacons_from_scanner_0);
+    }
+
+    println!("{}", scanner_into_0.len());
+    println!("{}", all_beacons_from_scanner_0.len());
 }
 
 lazy_static! {
@@ -174,104 +114,73 @@ fn find_orientation_and_position(
     scanner_1: &Scanner,
     scanner_2: &Scanner,
 ) -> Option<(Orientation, Point)> {
-    let mut diffs = vec![];
-    diffs.push(scanner_1.get_diffs());
-    diffs.push(scanner_2.get_diffs());
-
-    let mut simi_pairs = vec![];
-    for pair in diffs.iter().combinations(2) {
-        for diff_1 in pair[0] {
-            for diff_2 in pair[1] {
-                if diff_1.2.is_similar(&diff_2.2) {
-                    simi_pairs.push((diff_1, diff_2));
-                }
-            }
-        }
-    }
-
-    //println!("Pairs: {:?}, size: {}", simi_pairs, simi_pairs.len());
-
-    let mut common_beacons_from_scanner_1 = HashSet::new();
-    let mut common_beacons_from_scanner_2 = HashSet::new();
-    for pair in simi_pairs.iter() {
-        common_beacons_from_scanner_1.insert(pair.0 .0);
-        common_beacons_from_scanner_1.insert(pair.0 .1);
-
-        common_beacons_from_scanner_2.insert(pair.1 .0);
-        common_beacons_from_scanner_2.insert(pair.1 .1);
-    }
-
-    /*println!(
-        "Beacons from scanner 0: {:?}, size: {}",
-        common_beacons_from_scanner_1,
-        common_beacons_from_scanner_1.len()
+    println!(
+        "Comparing beacons from scanner {} and scanner {}",
+        scanner_1.id, scanner_2.id
     );
 
-    println!(
-        "Beacons from scanner 1: {:?}, size: {}",
-        common_beacons_from_scanner_2,
-        common_beacons_from_scanner_2.len()
-    );*/
-
-    let mut solver: HashMap<Point, Vec<(Point, Point)>> = HashMap::new();
-    let mut found = None;
-    if common_beacons_from_scanner_1.len() < 12 {
-        return None;
-    }
-
-    println!(
-        "Found {} common beacons between scanner {} and scanner {}!",
-        common_beacons_from_scanner_1.len(),
-        scanner_1.id,
-        scanner_2.id
-    );
-
+    let mut solver = HashMap::new();
+    let mut found;
     for orientation in Orientation::iter() {
-        for beacon_from_scanner_0 in common_beacons_from_scanner_1.iter() {
-            for beacon_from_scanner_1 in common_beacons_from_scanner_2.iter() {
+        for beacon_from_scanner_0 in scanner_1.beacons.iter() {
+            for beacon_from_scanner_1 in scanner_2.beacons.iter() {
                 let test_point =
                     beacon_from_scanner_0.substract(&beacon_from_scanner_1.reorient(&orientation));
 
                 let vec = solver.entry(test_point).or_insert(vec![]);
-                vec.push((*beacon_from_scanner_0, *beacon_from_scanner_1));
-            }
-
-            found = solver
-                .iter()
-                .find(|entry| entry.1.len() == common_beacons_from_scanner_1.len());
-
-            if found.is_some() {
-                println!(
-                    "Found scanner position: {}, orientation is {:?} between scanner {} and scanner {}",
-                    found.unwrap().0,
-                    orientation,
-                    scanner_1.id,
-                    scanner_2.id
-                );
-
-                return Some((orientation, *found.unwrap().0));
+                vec.push((*beacon_from_scanner_0, *beacon_from_scanner_1, orientation));
             }
         }
+    }
+
+    found = solver.iter().filter(|entry| entry.1.len() >= 12).count();
+
+    println!("Found {} set of 12 or more points", found);
+
+    if found > 0 {
+        let answer = solver
+            .iter()
+            .filter(|entry| entry.1.len() >= 12)
+            .last()
+            .unwrap();
+        println!(
+            "Found scanner position: {}, orientation is {:?} between scanner {} and scanner {}",
+            answer.0, answer.1[0].2, scanner_1.id, scanner_2.id
+        );
+
+        return Some((answer.1[0].2, *answer.0));
     }
 
     None
 }
 
-fn fuck_you(
+fn from_scanner_x_to_scanner_0(
     scanner_into_0: &HashMap<Scanner, Vec<(Orientation, Point)>>,
     scanners: &Vec<Scanner>,
 ) -> HashMap<Scanner, Vec<(Orientation, Point)>> {
     let mut to_return: HashMap<Scanner, Vec<(Orientation, Point)>> = HashMap::new();
 
-    for s_0 in scanner_into_0.keys() {
+    for s_y in scanner_into_0.keys() {
         for s in scanners.iter() {
-            match find_orientation_and_position(s_0, &s) {
+            match find_orientation_and_position(s_y, &s) {
                 Some((or, pos)) => {
+                    let ops_between_scanner_y_and_0 = scanner_into_0.get(s_y).unwrap()[0];
+                    println!(
+                        "Operations between scanner 0 and scanner {}: vector {}, rotation {:?}",
+                        s_y.id, ops_between_scanner_y_and_0.1, ops_between_scanner_y_and_0.0
+                    );
+                    println!("Applying rotation {:?} to vector found between scanner {} and scanner {} and adding to {}", ops_between_scanner_y_and_0.0, s_y.id, s.id, ops_between_scanner_y_and_0.1);
                     let ops = to_return.entry(s.clone()).or_insert(vec![]);
-                    ops.extend(scanner_into_0.get(s_0).unwrap());
-                    ops.push((or, pos));
-
-                    //beacons_into_scanner_0.extend(transform_beacons_into(&s.beacons, &or, &pos));
+                    ops.push((
+                        or,
+                        ops_between_scanner_y_and_0
+                            .1
+                            .add(&pos.reorient(&ops_between_scanner_y_and_0.0)),
+                    ));
+                    println!(
+                        "Operations between scanner 0 and scanner {}: vector {}, rotation {:?}",
+                        s.id, ops[0].1, ops[0].0
+                    );
                 }
                 None => (),
             }
@@ -282,31 +191,22 @@ fn fuck_you(
 }
 
 fn transform_beacons_into(
+    scanner_id: &u8,
     beacons: &Vec<Point>,
     operations: &Vec<(Orientation, Point)>,
 ) -> Vec<Point> {
-    println!("{:?}", operations);
-    let mut scanner_position = Point::new(0, 0, 0);
-    for i in 0..operations.len() - 1 {
-        let pos = operations[i + 1].1;
-        let or = operations[i].0;
+    println!("Operations {:?}", operations);
 
-        scanner_position = scanner_position.add(&pos.reorient(&or));
-    }
+    let ops = operations[0];
 
-    println!("Scanner loc: {}", scanner_position);
-
-    let last_orientation = &operations[operations.len() - 1].0;
-
-    beacons
+    let new_points = beacons
         .iter()
-        .map(|b| {
-            scanner_position.substract(
-                &b.reorient(last_orientation)
-                    .reorient(&Orientation::PosxNegyPosz), // TODO why does this work???
-            )
-        })
-        .collect()
+        .map(|b| ops.1.add(&b.reorient(&ops.0)))
+        .collect();
+
+    println!("{:?}", new_points);
+
+    new_points
 }
 
 #[derive(Debug, Clone)]
@@ -348,60 +248,31 @@ impl Hash for Scanner {
     }
 }
 
-#[derive(Debug, EnumIter, Clone, Copy)]
+#[derive(Debug, EnumIter, Clone, Copy, PartialEq)]
 enum Orientation {
     PosxPosyPosz,
-    PosxPosyNegz,
-    PosxNegyPosz,
-    PosxNegyNegz,
     PosxNegzPosy,
-    PosxNegzNegy,
-    PosxPoszPosy,
+    PosxNegyNegz,
     PosxPoszNegy,
-
-    NegxPosyPosz,
-    NegxPosyNegz,
     NegxNegyPosz,
-    NegxNegyNegz,
     NegxPoszPosy,
-    NegxPoszNegy,
-    NegxNegzPosy,
+    NegxPosyNegz,
     NegxNegzNegy,
-
     PosyPoszPosx,
-    PosyPoszNegx,
-    PosyNegzPosx,
+    PosyNegxPosz,
     PosyNegzNegx,
     PosyPosxNegz,
-    PosyPosxPosz,
-    PosyNegxPosz,
-    PosyNegxNegz,
-
-    NegyPosxPosz,
-    NegyPosxNegz,
-    NegyNegxPosz,
-    NegyNegxNegz,
-    NegyPoszPosx,
-    NegyPoszNegx,
     NegyNegzPosx,
-    NegyNegzNegx,
-
+    NegyPosxPosz,
+    NegyPoszNegx,
+    NegyNegxNegz,
     PoszPosxPosy,
-    PoszPosxNegy,
-    PoszNegxPosy,
-    PoszNegxNegy,
-    PoszPosyPosx,
-    PoszPosyNegx,
     PoszNegyPosx,
-    PoszNegyNegx,
-
-    NegzPosxPosy,
-    NegzPosxNegy,
+    PoszNegxNegy,
+    PoszPosyNegx,
     NegzNegxPosy,
-    NegzNegxNegy,
     NegzPosyPosx,
-    NegzPosyNegx,
-    NegzNegyPosx,
+    NegzPosxNegy,
     NegzNegyNegx,
 }
 
@@ -459,11 +330,6 @@ impl Point {
                 x: self.x,
                 y: -self.y,
                 z: -self.z,
-            },
-            Orientation::PosxNegyPosz => Point {
-                x: self.x,
-                y: -self.y,
-                z: self.z,
             },
             Orientation::PosxPoszNegy => Point {
                 x: self.x,
@@ -569,121 +435,6 @@ impl Point {
                 x: -self.z,
                 y: -self.y,
                 z: -self.x,
-            },
-            Orientation::PosxPosyNegz => Point {
-                x: self.x,
-                y: self.y,
-                z: -self.z,
-            },
-            Orientation::PosxNegzNegy => Point {
-                x: self.x,
-                y: -self.z,
-                z: -self.y,
-            },
-            Orientation::PosxPoszPosy => Point {
-                x: self.x,
-                y: self.z,
-                z: self.y,
-            },
-            Orientation::NegxPosyPosz => Point {
-                x: -self.x,
-                y: self.y,
-                z: self.z,
-            },
-            Orientation::NegxNegyNegz => Point {
-                x: -self.x,
-                y: -self.y,
-                z: -self.z,
-            },
-            Orientation::NegxPoszNegy => Point {
-                x: -self.x,
-                y: self.z,
-                z: -self.y,
-            },
-            Orientation::NegxNegzPosy => Point {
-                x: -self.x,
-                y: -self.z,
-                z: self.y,
-            },
-            Orientation::PosyPoszNegx => Point {
-                x: self.y,
-                y: self.z,
-                z: -self.x,
-            },
-            Orientation::PosyNegzPosx => Point {
-                x: self.y,
-                y: -self.z,
-                z: self.x,
-            },
-            Orientation::PosyPosxPosz => Point {
-                x: self.y,
-                y: self.x,
-                z: self.z,
-            },
-            Orientation::PosyNegxNegz => Point {
-                x: self.y,
-                y: -self.x,
-                z: -self.z,
-            },
-            Orientation::NegyPosxNegz => Point {
-                x: -self.y,
-                y: self.x,
-                z: -self.z,
-            },
-            Orientation::NegyNegxPosz => Point {
-                x: -self.y,
-                y: -self.x,
-                z: self.z,
-            },
-            Orientation::NegyPoszPosx => Point {
-                x: -self.y,
-                y: self.z,
-                z: self.x,
-            },
-            Orientation::NegyNegzNegx => Point {
-                x: -self.y,
-                y: -self.z,
-                z: -self.x,
-            },
-            Orientation::PoszPosxNegy => Point {
-                x: self.z,
-                y: self.x,
-                z: -self.y,
-            },
-            Orientation::PoszNegxPosy => Point {
-                x: self.z,
-                y: -self.x,
-                z: self.y,
-            },
-            Orientation::PoszPosyPosx => Point {
-                x: self.z,
-                y: self.y,
-                z: self.x,
-            },
-            Orientation::PoszNegyNegx => Point {
-                x: self.z,
-                y: -self.y,
-                z: -self.x,
-            },
-            Orientation::NegzPosxPosy => Point {
-                x: -self.z,
-                y: self.x,
-                z: self.y,
-            },
-            Orientation::NegzNegxNegy => Point {
-                x: -self.z,
-                y: -self.x,
-                z: -self.y,
-            },
-            Orientation::NegzPosyNegx => Point {
-                x: -self.z,
-                y: self.y,
-                z: -self.x,
-            },
-            Orientation::NegzNegyPosx => Point {
-                x: -self.z,
-                y: -self.y,
-                z: self.x,
             },
         }
     }
