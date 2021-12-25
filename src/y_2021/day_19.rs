@@ -120,14 +120,15 @@ fn find_orientation_and_position(
     }
 
     let mut solver = HashMap::new();
-    for orientation in Orientation::iter() {
-        for beacon_from_scanner_0 in beacons_1.iter() {
-            for beacon_from_scanner_1 in scanner_2.beacons.iter() {
+
+    for beacon_from_scanner_0 in beacons_1.iter() {
+        for beacon_from_scanner_1 in scanner_2.beacons.iter() {
+            for orientation in Orientation::iter() {
                 let test_point =
                     beacon_from_scanner_0.substract(&beacon_from_scanner_1.reorient(&orientation));
 
                 let vec = solver.entry(test_point).or_insert(vec![]);
-                vec.push((*beacon_from_scanner_0, *beacon_from_scanner_1));
+                vec.push((*beacon_from_scanner_0, *beacon_from_scanner_1, orientation));
             }
 
             let found = solver.iter().find(|entry| entry.1.len() >= 12);
@@ -135,12 +136,13 @@ fn find_orientation_and_position(
             if found.is_some() {
                 let pos_vector = found.unwrap().0;
                 let count = found.unwrap().1.len();
+                let or = found.unwrap().1[0].2;
                 println!(
                     "Found {} beacons between scanner {} and scanner {}. Position: {}, orientation: {:?}",
-                    count, scanner_1.id, scanner_2.id, pos_vector, orientation
+                    count, scanner_1.id, scanner_2.id, pos_vector, or
                 );
 
-                return Some((orientation, *pos_vector));
+                return Some((or, *pos_vector));
             }
         }
     }
